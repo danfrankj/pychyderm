@@ -53,6 +53,15 @@ class Dag:
                     f"computing ... {upstream.node_id} -{edge.edge_id}-> {node.node_id}"
                 )
                 computed = edge.compute(data=upstream_data)
+                # TODO we should detect data key collisions ahead of time
+                key_intersection = set(node_data.keys()).intersection(
+                    set(computed.keys())
+                )
+                if key_intersection:
+                    raise Exception(
+                        f"data key collision during compute merge {key_intersection}"
+                    )
+
                 node_data.update(computed)
 
             node.commit(node_data, commit_sha=commit_sha)
