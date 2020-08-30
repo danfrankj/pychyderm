@@ -1,5 +1,6 @@
 import networkx as nx
 import hashlib
+import logging
 
 
 class Dag:
@@ -24,7 +25,7 @@ class Dag:
 
             upstream_ids = list(self._digraph.reverse().neighbors(node_id))
             if not upstream_ids:
-                print(f"skipping {node_id}... no upstreams")
+                logging.info(f"skipping {node_id}... no upstreams")
                 continue
 
             upstreams = sorted(
@@ -42,28 +43,20 @@ class Dag:
             commit_sha = str(hsh.hexdigest())
             if node.has_commit(commit_sha):
                 node.checkout(commit_sha)
-                print(f"found data for ... {node.node_id}")
+                logging.info(f"found data for ... {node.node_id}")
                 continue
 
-            node_data = {}
+            node_data = []
             for upstream in upstreams:
                 upstream_data = upstream.extract()
                 edge = self._digraph.edges[upstream.node_id, node.node_id]["obj"]
-                print(
+                logging.info(
                     f"computing ... {upstream.node_id} -{edge.edge_id}-> {node.node_id}"
                 )
                 computed = edge.compute(data=upstream_data)
-                # TODO we should detect data key collisions ahead of time
-                key_intersection = set(node_data.keys()).intersection(
-                    set(computed.keys())
-                )
-                if key_intersection:
-                    raise Exception(
-                        f"data key collision during compute merge {key_intersection}"
-                    )
-
-                node_data.update(computed)
-
+                node_data.append(computed)
+            if len(node_data) == 1:
+                node_data = node_data[0]
             node.commit(node_data, commit_sha=commit_sha)
 
         if verbose:
@@ -74,6 +67,6 @@ class Dag:
             ]
             for leaf_node_id in leaf_node_ids:
                 leaf_node = self._digraph.nodes[leaf_node_id]["obj"]
-                print(
+                logging.info(
                     f"terminal node {leaf_node.node_id} produced value {leaf_node.extract()}"
                 )
