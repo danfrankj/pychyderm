@@ -31,12 +31,8 @@ plus.commit(plus_func_doubled, message="double_plus")
 plus.checkout_by_message(message="regular_plus")
 
 
-def ident_func(data):
-    return data
-
-
 identity = ComputeEdge(edge_id="identity")
-identity.commit(ident_func, message="ident")
+identity.commit(lambda data: data, message="ident")
 
 # a -identity->
 #               > merge -plus-> out
